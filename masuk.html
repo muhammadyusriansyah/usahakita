@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Masuk — UsahaKita</title>
+<meta name="description" content="Masuk ke dashboard UsahaKita untuk mengelola kasir, produk, stok, dan katalog usaha Anda.">
+<link rel="stylesheet" href="assets/css/base.css">
+</head>
+<body class="auth-body">
+
+<section class="auth-side">
+  <div>
+    <a class="brand" href="index.html" style="margin-bottom:34px">
+      <span class="brand-mark">U</span><span class="brand-text" style="color:#fff">usaha<b style="color:#ffa163">kita</b></span>
+    </a>
+    <h2>Satu dashboard untuk seluruh operasional usaha.</h2>
+    <p>Kasir, stok, laporan, dan katalog online yang selalu sinkron — dari warung sampai toko dengan beberapa cabang.</p>
+    <ul>
+      <li>Transaksi cepat dengan struk digital</li>
+      <li>Stok otomatis berkurang saat penjualan</li>
+      <li>Katalog online siap dibagikan via WhatsApp</li>
+      <li>Laporan laba dan produk terlaris</li>
+    </ul>
+  </div>
+  <p class="tiny" style="color:#8f96b3;margin:0">© <span id="tahun"></span> UsahaKita — prototype demo</p>
+</section>
+
+<section class="auth-main">
+  <div class="auth-card">
+    <a class="brand" href="index.html" style="margin-bottom:20px">
+      <span class="brand-mark">U</span><span class="brand-text">usaha<b>kita</b></span>
+    </a>
+    <h1>Masuk ke akun Anda</h1>
+    <p class="sub">Belum punya akun? <a href="daftar.html">Daftar gratis</a></p>
+
+    <div class="form-alert" id="formAlert" role="alert"></div>
+
+    <form id="loginForm" novalidate>
+      <div class="field" id="fEmail">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autocomplete="email" placeholder="nama@usaha.id" required>
+        <span class="err">Masukkan email yang valid.</span>
+      </div>
+      <div class="field" id="fPass">
+        <label for="password">Kata sandi</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Kata sandi" required>
+          <button class="pw-toggle" type="button" id="pwToggle" aria-label="Tampilkan kata sandi">Lihat</button>
+        </div>
+        <span class="err">Kata sandi wajib diisi.</span>
+      </div>
+
+      <div class="row between" style="margin:2px 0 14px">
+        <label class="check"><input type="checkbox" id="remember" checked> Ingat saya</label>
+        <button type="button" class="btn btn-xs btn-ghost" id="forgotBtn" style="border:0;background:none;color:var(--orange-dark);padding:0">Lupa kata sandi?</button>
+      </div>
+
+      <button class="btn btn-primary btn-block btn-lg" type="submit" id="submitBtn">Masuk</button>
+    </form>
+
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0">
+      <hr style="flex:1;margin:0"><span class="tiny muted">atau</span><hr style="flex:1;margin:0">
+    </div>
+    <button class="btn btn-light btn-block" type="button" id="demoBtn">Masuk sebagai demo</button>
+    <p class="tiny muted center" style="margin-top:10px">Demo pemilik: demo@usahakita.id / demo1234<br>Admin platform: <a href="admin/index.html">halaman admin</a></p>
+  </div>
+</section>
+
+<!-- Modal lupa sandi -->
+<div class="modal" id="modalForgot" role="dialog" aria-modal="true" aria-labelledby="forgotTitle">
+  <div class="modal-box narrow">
+    <div class="modal-head">
+      <h3 id="forgotTitle">Lupa kata sandi</h3>
+      <button class="modal-x" type="button" data-close="modalForgot" aria-label="Tutup">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="small muted">Masukkan email akun Anda. Kami akan mengirim tautan untuk mengatur ulang kata sandi.</p>
+      <div class="field">
+        <label for="forgotEmail">Email</label>
+        <input type="email" id="forgotEmail" placeholder="nama@usaha.id">
+      </div>
+      <p class="tiny muted">Mode demo: tautan reset tidak benar-benar dikirim.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-light" type="button" data-close="modalForgot">Batal</button>
+      <button class="btn btn-primary" type="button" id="forgotSend">Kirim tautan</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/db.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/utils.js"></script>
+<script>
+(function () {
+  'use strict';
+  document.getElementById('tahun').textContent = new Date().getFullYear();
+
+  /* Sudah login? langsung ke dashboard sesuai peran */
+  var existing = Auth.currentSession();
+  if (existing) {
+    location.replace(existing.role === 'admin' ? 'admin/index.html' : 'app/index.html');
+    return;
+  }
+
+  var form = document.getElementById('loginForm');
+  var alertBox = document.getElementById('formAlert');
+  var submitBtn = document.getElementById('submitBtn');
+  var emailInput = document.getElementById('email');
+  var passInput = document.getElementById('password');
+  var fEmail = document.getElementById('fEmail');
+  var fPass = document.getElementById('fPass');
+
+  function showAlert(msg, ok) {
+    alertBox.textContent = msg;
+    alertBox.className = 'form-alert show' + (ok ? ' ok' : '');
+  }
+  function hideAlert() { alertBox.className = 'form-alert'; }
+
+  document.getElementById('pwToggle').addEventListener('click', function () {
+    var show = passInput.type === 'password';
+    passInput.type = show ? 'text' : 'password';
+    this.textContent = show ? 'Sembunyikan' : 'Lihat';
+    this.setAttribute('aria-label', show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+  });
+
+  document.getElementById('demoBtn').addEventListener('click', function () {
+    emailInput.value = 'demo@usahakita.id';
+    passInput.value = 'demo1234';
+    emailInput.dispatchEvent(new Event('input'));
+    passInput.dispatchEvent(new Event('input'));
+    showAlert('Akun demo terisi. Klik "Masuk" untuk melanjutkan.', true);
+    submitBtn.focus();
+  });
+
+  document.querySelectorAll('[data-close]').forEach(function (b) {
+    b.addEventListener('click', function () { UK.closeModal(b.getAttribute('data-close')); });
+  });
+  document.getElementById('forgotBtn').addEventListener('click', function () {
+    document.getElementById('forgotEmail').value = emailInput.value || '';
+    UK.openModal('modalForgot');
+  });
+  document.getElementById('forgotSend').addEventListener('click', function () {
+    var em = document.getElementById('forgotEmail').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { UK.toast('Masukkan email yang valid.', 'err'); return; }
+    UK.closeModal('modalForgot');
+    UK.toast('Tautan reset dikirim ke ' + em + ' (simulasi).', 'ok');
+  });
+  UK.closeOnBackdrop('#modalForgot');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    hideAlert();
+    var email = emailInput.value.trim();
+    var pass = passInput.value;
+    var bad = false;
+    fEmail.classList.toggle('invalid', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) bad = true;
+    fPass.classList.toggle('invalid', !pass);
+    if (!pass) bad = true;
+    if (bad) return;
+
+    submitBtn.disabled = true;
+    submitBtn.setAttribute('aria-busy', 'true');
+    submitBtn.textContent = 'Memproses…';
+
+    setTimeout(function () {
+      var res = Auth.login(email, pass);
+      submitBtn.disabled = false;
+      submitBtn.removeAttribute('aria-busy');
+      submitBtn.textContent = 'Masuk';
+      if (!res.ok) {
+        showAlert(res.error);
+        return;
+      }
+      var remember = document.getElementById('remember').checked;
+      UK.prefSet('lastEmail', remember ? email : '');
+      showAlert('Berhasil masuk. Mengalihkan…', true);
+      location.href = 'app/index.html';
+    }, 550);
+  });
+
+  var last = UK.prefGet('lastEmail', '');
+  if (last) emailInput.value = last;
+})();
+</script>
+</body>
+</html>

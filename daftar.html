@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daftar Gratis — UsahaKita</title>
+<meta name="description" content="Daftarkan usaha Anda di UsahaKita dan mulai kelola kasir, stok, laporan, serta katalog online secara gratis.">
+<link rel="stylesheet" href="assets/css/base.css">
+</head>
+<body class="auth-body">
+
+<section class="auth-side">
+  <div>
+    <a class="brand" href="index.html" style="margin-bottom:34px">
+      <span class="brand-mark">U</span><span class="brand-text" style="color:#fff">usaha<b style="color:#ffa163">kita</b></span>
+    </a>
+    <h2>Dua langkah, lalu usaha Anda siap jualan.</h2>
+    <p>Paket Free tidak perlu kartu kredit. Data usaha Anda terpisah dan hanya bisa diakses dari akun Anda.</p>
+    <ul>
+      <li>Katalog online langsung aktif</li>
+      <li>20 produk &amp; 1 pengguna di paket Free</li>
+      <li>Ganti ke paket lebih besar kapan saja</li>
+    </ul>
+  </div>
+  <p class="tiny" style="color:#8f96b3;margin:0">© <span id="tahun"></span> UsahaKita — prototype demo</p>
+</section>
+
+<section class="auth-main">
+  <div class="auth-card" style="max-width:430px">
+    <a class="brand" href="index.html" style="margin-bottom:18px">
+      <span class="brand-mark">U</span><span class="brand-text">usaha<b>kita</b></span>
+    </a>
+    <h1>Buat akun usaha</h1>
+    <p class="sub">Sudah punya akun? <a href="masuk.html">Masuk di sini</a></p>
+
+    <div class="wizard-steps" aria-hidden="true">
+      <div class="ws active" id="ws1"><i></i><span>1. Akun</span></div>
+      <div class="ws" id="ws2"><i></i><span>2. Profil usaha</span></div>
+    </div>
+
+    <div class="form-alert" id="formAlert" role="alert"></div>
+
+    <!-- Langkah 1 -->
+    <form id="step1" novalidate>
+      <div class="field" id="fNama">
+        <label for="nama">Nama lengkap</label>
+        <input type="text" id="nama" autocomplete="name" placeholder="Contoh: Yusriansyah" required>
+        <span class="err">Nama wajib diisi (minimal 3 huruf).</span>
+      </div>
+      <div class="field" id="fEmail">
+        <label for="email">Email</label>
+        <input type="email" id="email" autocomplete="email" placeholder="nama@usaha.id" required>
+        <span class="err">Masukkan email yang valid dan belum terdaftar.</span>
+      </div>
+      <div class="field" id="fPass">
+        <label for="password">Kata sandi</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" autocomplete="new-password" placeholder="Minimal 8 karakter" required>
+          <button class="pw-toggle" type="button" id="pwToggle" aria-label="Tampilkan kata sandi">Lihat</button>
+        </div>
+        <div class="strength" id="strength" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <span class="hint" id="strengthText">Gunakan minimal 8 karakter, campur huruf dan angka.</span>
+        <span class="err">Kata sandi minimal 8 karakter.</span>
+      </div>
+      <div class="field" id="fPass2">
+        <label for="password2">Ulangi kata sandi</label>
+        <input type="password" id="password2" autocomplete="new-password" placeholder="Ulangi kata sandi" required>
+        <span class="err">Konfirmasi kata sandi tidak sama.</span>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" type="submit">Lanjut ke profil usaha</button>
+      <p class="tiny muted center" style="margin-top:10px">Dengan mendaftar, Anda menyetujui Syarat Layanan dan Kebijakan Privasi (demo).</p>
+    </form>
+
+    <!-- Langkah 2 -->
+    <form id="step2" class="hidden" novalidate>
+      <div class="field" id="fUsaha">
+        <label for="namaUsaha">Nama usaha</label>
+        <input type="text" id="namaUsaha" placeholder="Contoh: Dapur Bunda" required>
+        <span class="hint">Tautan katalog: <span id="slugPreview" class="mono">toko/?u=nama-usaha</span></span>
+        <span class="err">Nama usaha wajib diisi (minimal 3 huruf).</span>
+      </div>
+      <div class="field" id="fJenis">
+        <label for="jenis">Jenis usaha</label>
+        <select id="jenis" required></select>
+        <span class="err">Pilih jenis usaha.</span>
+      </div>
+      <div class="field" id="fWa">
+        <label for="wa">Nomor WhatsApp</label>
+        <input type="tel" id="wa" inputmode="numeric" placeholder="0812 3456 7890" required>
+        <span class="hint" id="waPreview">Otomatis disimpan dalam format 62…</span>
+        <span class="err">Masukkan nomor WhatsApp yang valid (minimal 9 digit).</span>
+      </div>
+      <div class="field" id="fAlamat">
+        <label for="alamat">Alamat usaha</label>
+        <textarea id="alamat" rows="2" placeholder="Jalan, nomor, kota" required></textarea>
+        <span class="err">Alamat wajib diisi.</span>
+      </div>
+      <div class="row" style="gap:8px">
+        <button class="btn btn-light" type="button" id="backBtn">Kembali</button>
+        <button class="btn btn-primary grow" type="submit" id="submitBtn">Daftar &amp; masuk dashboard</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script src="assets/js/db.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/utils.js"></script>
+<script>
+(function () {
+  'use strict';
+  document.getElementById('tahun').textContent = new Date().getFullYear();
+
+  if (Auth.currentSession()) {
+    location.replace(Auth.currentSession().role === 'admin' ? 'admin/index.html' : 'app/index.html');
+    return;
+  }
+
+  var form1 = document.getElementById('step1');
+  var form2 = document.getElementById('step2');
+  var alertBox = document.getElementById('formAlert');
+  var ws1 = document.getElementById('ws1');
+  var ws2 = document.getElementById('ws2');
+  var draft = {};
+
+  var jenisSelect = document.getElementById('jenis');
+  jenisSelect.innerHTML = '<option value="">Pilih jenis usaha…</option>' +
+    db.businessCategories.list().filter(function (c) { return c.aktif; })
+      .map(function (c) { return '<option value="' + UK.escapeHTML(c.id) + '">' + UK.escapeHTML(c.nama) + '</option>'; }).join('');
+
+  function alertMsg(msg, ok) {
+    alertBox.textContent = msg;
+    alertBox.className = 'form-alert show' + (ok ? ' ok' : '');
+  }
+  function clearAlert() { alertBox.className = 'form-alert'; }
+
+  document.getElementById('pwToggle').addEventListener('click', function () {
+    var p = document.getElementById('password');
+    var show = p.type === 'password';
+    p.type = show ? 'text' : 'password';
+    this.textContent = show ? 'Sembunyikan' : 'Lihat';
+  });
+
+  /* indikator kekuatan sandi */
+  var passInput = document.getElementById('password');
+  passInput.addEventListener('input', function () {
+    var v = passInput.value;
+    var score = 0;
+    if (v.length >= 8) score++;
+    if (v.length >= 12) score++;
+    if (/[A-Z]/.test(v) && /[a-z]/.test(v)) score++;
+    if (/[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v)) score++;
+    if (v.length && v.length < 8) score = 1;
+    var el = document.getElementById('strength');
+    el.className = 'strength' + (score ? ' lvl' + Math.min(score, 4) : '');
+    var labels = ['', 'Lemah', 'Sedang', 'Kuat', 'Sangat kuat'];
+    document.getElementById('strengthText').textContent = v
+      ? 'Kekuatan: ' + (labels[score] || 'Lemah')
+      : 'Gunakan minimal 8 karakter, campur huruf dan angka.';
+  });
+
+  /* normalisasi WA langsung */
+  var waInput = document.getElementById('wa');
+  waInput.addEventListener('blur', function () {
+    var n = UK.normalisasiWA(waInput.value);
+    if (n) {
+      waInput.value = n;
+      document.getElementById('waPreview').textContent = 'Disimpan sebagai ' + n + ' (+' + n + ')';
+    }
+  });
+
+  var usahaInput = document.getElementById('namaUsaha');
+  usahaInput.addEventListener('input', function () {
+    var slug = UK.slugify(usahaInput.value) || 'nama-usaha';
+    document.getElementById('slugPreview').textContent = 'toko/?u=' + slug;
+  });
+
+  form1.addEventListener('submit', function (e) {
+    e.preventDefault();
+    clearAlert();
+    var nama = document.getElementById('nama').value.trim();
+    var email = document.getElementById('email').value.trim();
+    var pass = passInput.value;
+    var pass2 = document.getElementById('password2').value;
+    var bad = false;
+
+    var namaBad = nama.length < 3;
+    var emailBad = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !!db.users.findByEmail(email);
+    var passBad = pass.length < 8;
+    var pass2Bad = pass2 !== pass || !pass2;
+
+    document.getElementById('fNama').classList.toggle('invalid', namaBad);
+    document.getElementById('fEmail').classList.toggle('invalid', emailBad);
+    document.getElementById('fPass').classList.toggle('invalid', passBad);
+    document.getElementById('fPass2').classList.toggle('invalid', pass2Bad);
+    if (namaBad || emailBad || passBad || pass2Bad) {
+      bad = true;
+      if (emailBad && db.users.findByEmail(email)) alertMsg('Email sudah terdaftar. Gunakan email lain atau masuk.');
+      else alertMsg('Periksa kembali data akun Anda.');
+    }
+    if (bad) return;
+
+    draft.nama = nama;
+    draft.email = email.toLowerCase();
+    draft.password = pass;
+
+    document.getElementById('namaUsaha').value = '';
+    form1.classList.add('hidden');
+    form2.classList.remove('hidden');
+    ws1.classList.add('done');
+    ws2.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('namaUsaha').focus();
+  });
+
+  document.getElementById('backBtn').addEventListener('click', function () {
+    form2.classList.add('hidden');
+    form1.classList.remove('hidden');
+    ws2.classList.remove('active');
+    ws1.classList.remove('done');
+  });
+
+  form2.addEventListener('submit', function (e) {
+    e.preventDefault();
+    clearAlert();
+    var namaUsaha = usahaInput.value.trim();
+    var jenis = jenisSelect.value;
+    var wa = UK.normalisasiWA(waInput.value);
+    var alamat = document.getElementById('alamat').value.trim();
+    var bad = false;
+
+    var usahaBad = namaUsaha.length < 3;
+    var jenisBad = !jenis;
+    var waBad = wa.length < 9;
+    var alamatBad = alamat.length < 5;
+
+    document.getElementById('fUsaha').classList.toggle('invalid', usahaBad);
+    document.getElementById('fJenis').classList.toggle('invalid', jenisBad);
+    document.getElementById('fWa').classList.toggle('invalid', waBad);
+    document.getElementById('fAlamat').classList.toggle('invalid', alamatBad);
+    if (usahaBad || jenisBad || waBad || alamatBad) {
+      alertMsg('Lengkapi profil usaha terlebih dahulu.');
+      return;
+    }
+
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Membuat akun…';
+
+    setTimeout(function () {
+      var res = Auth.register({
+        nama: draft.nama, email: draft.email, password: draft.password,
+        namaUsaha: namaUsaha, jenis: jenis, wa: wa, alamat: alamat,
+        slug: UK.slugify(namaUsaha)
+      });
+      btn.disabled = false;
+      btn.textContent = 'Daftar & masuk dashboard';
+      if (!res.ok) { alertMsg(res.error); return; }
+      alertMsg('Akun berhasil dibuat. Mengalihkan ke dashboard…', true);
+      setTimeout(function () { location.href = 'app/index.html'; }, 450);
+    }, 500);
+  });
+})();
+</script>
+</body>
+</html>

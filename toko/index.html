@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Katalog — UsahaKita</title>
+<meta id="metaDesc" name="description" content="Katalog online UMKM di UsahaKita.">
+<link rel="stylesheet" href="../assets/css/base.css">
+</head>
+<body class="public-body">
+
+<header class="public-head" id="shopHeader" hidden>
+  <div class="public-wrap">
+    <div class="public-top">
+      <a class="brand" href="../index.html" aria-label="UsahaKita">
+        <span class="brand-mark">U</span><span class="brand-text">usaha<b>kita</b></span>
+      </a>
+      <a class="btn btn-light btn-sm" href="../daftar.html">Buka usaha sendiri</a>
+    </div>
+    <div class="shop-hero">
+      <div class="shop-logo" id="shopLogo">🏪</div>
+      <div class="grow">
+        <div class="row wrap" style="gap:8px">
+          <h1 id="shopName" style="font-size:22px;letter-spacing:-.5px">Nama Usaha</h1>
+          <span id="shopOpen" class="status">Memuat…</span>
+        </div>
+        <p class="small muted" id="shopDesc" style="margin:3px 0 4px"></p>
+        <div class="tiny muted" id="shopMeta"></div>
+        <div class="row wrap" style="gap:8px;margin-top:9px">
+          <a class="btn btn-primary btn-sm" id="shopWa" href="#" target="_blank" rel="noopener">💬 Hubungi via WhatsApp</a>
+          <span class="tiny muted" id="shopHours"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="public-wrap" style="padding-top:18px;padding-bottom:40px">
+    <div class="toolbar" id="catalogTools" hidden>
+      <div class="search-box grow">
+        <span class="ico">🔍</span>
+        <input type="search" id="catalogSearch" placeholder="Cari produk…" aria-label="Cari produk">
+      </div>
+      <select id="catalogSort" aria-label="Urutkan produk" style="width:auto">
+        <option value="baru">Terbaru</option>
+        <option value="harga-asc">Harga terendah</option>
+        <option value="harga-desc">Harga tertinggi</option>
+        <option value="nama">Nama A–Z</option>
+      </select>
+    </div>
+    <div class="chips" id="catalogChips" style="margin:12px 0" hidden></div>
+    <div id="catalogStatus" class="tiny muted" style="margin-bottom:10px"></div>
+    <div id="catalogGrid" class="catalog-grid"></div>
+
+    <section id="tanyaSection" class="panel" style="margin-top:26px;max-width:560px" hidden>
+      <div class="panel-head"><h3>Tanya penjual</h3><span class="tiny muted">Kami balas lewat dashboard</span></div>
+      <div class="panel-body">
+        <form id="tanyaForm" novalidate>
+          <div class="field" id="tNamaF"><label for="tNama">Nama Anda *</label>
+            <input type="text" id="tNama" maxlength="50" placeholder="Nama lengkap" required>
+            <span class="err">Nama wajib diisi.</span></div>
+          <div class="field" id="tPesanF"><label for="tPesan">Pesan *</label>
+            <textarea id="tPesan" rows="3" maxlength="400" placeholder="Contoh: Apakah bisa kirim ke luar kota?" required></textarea>
+            <span class="err">Pesan minimal 5 karakter.</span></div>
+          <button class="btn btn-primary" type="submit" id="tKirim">Kirim pertanyaan</button>
+        </form>
+        <p class="tiny muted" style="margin:10px 0 0">Pesan akan masuk ke menu "Pesan Pelanggan" pada dashboard penjual.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="inner">
+    <span>Dibuat dengan <a href="../index.html"><b>UsahaKita</b></a></span>
+    <div class="links">
+      <a href="../index.html">Beranda</a>
+      <a href="../masuk.html">Masuk penjual</a>
+      <a href="../daftar.html">Daftar gratis</a>
+    </div>
+  </div>
+</footer>
+
+<!-- modal detail produk -->
+<div class="modal" id="modalProduk" role="dialog" aria-modal="true" aria-labelledby="mpTitle">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="mpTitle">Detail produk</h3>
+      <button class="modal-x" type="button" data-x aria-label="Tutup">✕</button></div>
+    <div class="modal-body" id="mpBody"></div>
+  </div>
+</div>
+
+<div id="uk-print"></div>
+
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var slug = '';
+  try {
+    slug = new URLSearchParams(location.search).get('u') || '';
+  } catch (e) { slug = ''; }
+
+  var tenant = slug ? db.tenants.bySlug(slug) : null;
+  var main = document.getElementById('main');
+
+  function tidakTersedia(pesan) {
+    document.getElementById('shopHeader').hidden = true;
+    document.getElementById('catalogTools').hidden = true;
+    document.getElementById('catalogChips').hidden = true;
+    document.getElementById('tanyaSection').hidden = true;
+    document.title = 'Katalog tidak tersedia — UsahaKita';
+    main.innerHTML =
+      '<div class="public-wrap" style="padding:60px 18px;max-width:520px">' +
+      '<div class="card center" style="padding:30px 22px">' +
+      '<div style="font-size:34px">🏪</div>' +
+      '<h1 style="font-size:20px;margin:10px 0 4px">Katalog tidak tersedia</h1>' +
+      '<p class="small muted" style="margin:0 0 14px">' + UK.escapeHTML(pesan) + '</p>' +
+      '<a class="btn btn-primary btn-sm" href="../index.html">Kembali ke beranda</a>' +
+      '</div></div>';
+  }
+
+  if (!slug) { tidakTersedia('Tautan katalog tidak memiliki nama usaha. Pastikan alamat diakhiri ?u=nama-usaha.'); return; }
+  if (!tenant) { tidakTersedia('Usaha dengan tautan tersebut tidak ditemukan. Periksa kembali tautan dari penjual.'); return; }
+  if (!tenant.katalogAktif) { tidakTersedia('Penjual sedang menonaktifkan katalog online. Silakan hubungi penjual langsung.'); return; }
+
+  var settings = db.settings.get(tenant.id);
+  var products = db.products.list({ tenantId: tenant.id }).filter(function (p) {
+    return p.status === 'dipublikasikan';
+  });
+  var categories = db.categories.list({ tenantId: tenant.id });
+
+  /* ---------- header toko ---------- */
+  var header = document.getElementById('shopHeader');
+  header.hidden = false;
+  document.getElementById('shopName').textContent = tenant.nama;
+  document.getElementById('shopDesc').textContent = tenant.deskripsi || '';
+  document.title = tenant.nama + ' — Katalog Online';
+  document.getElementById('metaDesc').setAttribute('content', (tenant.deskripsi || tenant.nama + ' katalog online').slice(0, 160));
+
+  var logoEl = document.getElementById('shopLogo');
+  if (tenant.logo && /^data:/.test(tenant.logo)) logoEl.innerHTML = '<img src="' + tenant.logo + '" alt="Logo ' + UK.escapeHTML(tenant.nama) + '">';
+  else logoEl.textContent = tenant.logo || UK.inisial(tenant.nama);
+
+  var alamat = tenant.alamat ? '📍 ' + tenant.alamat : '';
+  document.getElementById('shopMeta').textContent = alamat;
+
+  var HARI_KEY = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+  function jamHariIni() {
+    var jam = tenant.jamOperasional || {};
+    return jam[HARI_KEY[new Date().getDay()]] || null;
+  }
+  function statusBuka() {
+    var j = jamHariIni();
+    if (!j || !j.buka) return { buka: false, teks: 'Tutup hari ini' };
+    var now = new Date();
+    var menit = now.getHours() * 60 + now.getMinutes();
+    function toMin(s) {
+      var p = String(s || '00:00').split(':');
+      return (Number(p[0]) || 0) * 60 + (Number(p[1]) || 0);
+    }
+    var from = toMin(j.dari), to = toMin(j.sampai);
+    var buka = menit >= from && menit <= to;
+    return {
+      buka: buka,
+      teks: buka ? 'Buka sekarang' : 'Tutup sekarang',
+      jam: 'Hari ini ' + j.dari + '–' + j.sampai
+    };
+  }
+  var st = statusBuka();
+  var openEl = document.getElementById('shopOpen');
+  openEl.className = 'status ' + (st.buka ? 'success' : 'danger');
+  openEl.textContent = st.teks;
+  document.getElementById('shopHours').textContent = st.jam || '';
+
+  document.getElementById('shopWa').href = UK.buatLinkWA(tenant.wa,
+    'Halo ' + tenant.nama + ', saya menemukan katalog Anda di UsahaKita. Saya ingin bertanya.');
+
+  document.getElementById('tanyaSection').hidden = false;
+
+  /* ---------- katalog ---------- */
+  var C = { q: '', kategori: '', sort: 'baru' };
+  var grid = document.getElementById('catalogGrid');
+  var tools = document.getElementById('catalogTools');
+  tools.hidden = false;
+  var chipsEl = document.getElementById('catalogChips');
+  chipsEl.hidden = false;
+
+  function filterProduk() {
+    var list = products.slice();
+    if (C.kategori) list = list.filter(function (p) { return p.kategoriId === C.kategori; });
+    if (C.q) {
+      var q = C.q.toLowerCase();
+      list = list.filter(function (p) {
+        return String(p.nama).toLowerCase().indexOf(q) >= 0 ||
+          String(p.deskripsi || '').toLowerCase().indexOf(q) >= 0;
+      });
+    }
+    list.sort(function (a, b) {
+      if (C.sort === 'harga-asc') return a.hargaJual - b.hargaJual;
+      if (C.sort === 'harga-desc') return b.hargaJual - a.hargaJual;
+      if (C.sort === 'nama') return String(a.nama).localeCompare(String(b.nama));
+      return new Date(b.dibuatPada || 0) - new Date(a.dibuatPada || 0);
+    });
+    return list;
+  }
+
+  function renderChips() {
+    var used = {};
+    products.forEach(function (p) { used[p.kategoriId] = true; });
+    var cats = categories.filter(function (c) { return used[c.id]; });
+    chipsEl.innerHTML = '<button class="chip' + (!C.kategori ? ' active' : '') + '" type="button" data-kat="">Semua</button>' +
+      cats.map(function (c) {
+        return '<button class="chip' + (C.kategori === c.id ? ' active' : '') + '" type="button" data-kat="' + c.id + '">' +
+          UK.escapeHTML(c.nama) + '</button>';
+      }).join('');
+    chipsEl.querySelectorAll('[data-kat]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        C.kategori = b.getAttribute('data-kat');
+        renderChips(); renderGrid();
+      });
+    });
+  }
+
+  function skeleton() {
+    grid.innerHTML = Array.apply(null, Array(8)).map(function () {
+      return '<div class="ccard"><div class="skeleton" style="aspect-ratio:1/1"></div>' +
+        '<div style="padding:10px"><div class="skeleton" style="height:10px;margin-bottom:6px"></div>' +
+        '<div class="skeleton" style="height:10px;width:60%"></div></div></div>';
+    }).join('');
+  }
+
+  function renderGrid() {
+    var list = filterProduk();
+    var status = document.getElementById('catalogStatus');
+    status.textContent = list.length ? list.length + ' produk' + (C.kategori || C.q ? ' ditemukan' : ' tersedia') : '';
+    if (!list.length) {
+      grid.innerHTML = '<div class="card empty-note" style="grid-column:1/-1"><span class="ico">🔍</span>' +
+        '<b>' + (products.length ? 'Produk tidak ditemukan' : 'Belum ada produk') + '</b>' +
+        '<span>' + (products.length ? 'Coba kata kunci atau kategori lain.' : 'Penjual belum mempublikasikan produk.') + '</span></div>';
+      return;
+    }
+    grid.innerHTML = list.map(function (p) {
+      var habis = p.stok <= 0;
+      return '<article class="ccard" data-produk="' + p.id + '" tabindex="0" role="button" aria-label="Lihat ' + UK.escapeHTML(p.nama) + '">' +
+        '<div class="ph">' + (p.foto ? '<img src="' + p.foto + '" alt="' + UK.escapeHTML(p.nama) + '" loading="lazy">' : UK.escapeHTML(p.emoji || '📦')) +
+        '<span class="badge-abs status ' + (habis ? 'danger' : 'success') + '">' + (habis ? 'Habis' : 'Tersedia') + '</span></div>' +
+        '<div class="bd"><div class="nm">' + UK.escapeHTML(p.nama) + '</div>' +
+        '<div class="pr">' + UK.rupiah(p.hargaJual) + '</div>' +
+        '<div class="ds">' + UK.escapeHTML(p.deskripsi || '') + '</div></div></article>';
+    }).join('');
+
+    grid.querySelectorAll('[data-produk]').forEach(function (el) {
+      function open() { bukaDetail(el.getAttribute('data-produk')); }
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
+  }
+
+  function bukaDetail(id) {
+    var p = db.products.get(id, tenant.id);
+    if (!p || p.status !== 'dipublikasikan') return;
+    var cat = categories.filter(function (c) { return c.id === p.kategoriId; })[0];
+    var habis = p.stok <= 0;
+    var qty = 1;
+    var varianIndex = -1;
+    var body = document.getElementById('mpBody');
+    document.getElementById('mpTitle').textContent = p.nama;
+
+    function render() {
+      var tambahan = varianIndex >= 0 && p.varian[varianIndex] ? Number(p.varian[varianIndex].tambahan) || 0 : 0;
+      var harga = p.hargaJual + tambahan;
+      body.innerHTML =
+        '<div style="position:relative;border-radius:12px;overflow:hidden;background:var(--orange-soft);aspect-ratio:16/10;display:grid;place-items:center;font-size:56px;margin-bottom:12px">' +
+        (p.foto ? '<img src="' + p.foto + '" alt="' + UK.escapeHTML(p.nama) + '" style="width:100%;height:100%;object-fit:cover">' : UK.escapeHTML(p.emoji || '📦')) +
+        '<span class="badge-abs status ' + (habis ? 'danger' : 'success') + '">' + (habis ? 'Stok habis' : 'Tersedia') + '</span></div>' +
+        '<div class="row between"><div><div class="tiny muted">' + UK.escapeHTML(cat ? cat.nama : 'Produk') + '</div>' +
+        '<div style="font-size:20px;font-weight:800;color:var(--orange-dark)">' + UK.rupiah(harga) + '</div></div>' +
+        '<div class="tiny muted">Sisa stok: ' + p.stok + '</div></div>' +
+        '<p class="small" style="margin:10px 0 0">' + UK.escapeHTML(p.deskripsi || 'Belum ada deskripsi produk.') + '</p>' +
+        (p.varian && p.varian.length ? '<div class="field" style="margin-top:12px"><label>Varian</label><div class="stack" style="gap:4px">' +
+          '<label class="check"><input type="radio" name="pvar" value="-1"' + (varianIndex === -1 ? ' checked' : '') + '> Tanpa varian</label>' +
+          p.varian.map(function (v, i) {
+            return '<label class="check"><input type="radio" name="pvar" value="' + i + '"' + (varianIndex === i ? ' checked' : '') + '> ' +
+              UK.escapeHTML(v.nama) + (Number(v.tambahan) ? ' (+' + UK.rupiah(v.tambahan) + ')' : '') + '</label>';
+          }).join('') + '</div></div>' : '') +
+        '<div class="row between" style="margin-top:14px"><span class="small muted">Jumlah</span>' +
+        '<div class="qty-box"><button type="button" id="mpMinus" aria-label="Kurangi">−</button>' +
+        '<input type="number" id="mpQty" value="' + qty + '" min="1" max="' + Math.max(1, p.stok) + '" aria-label="Jumlah pesanan">' +
+        '<button type="button" id="mpPlus" aria-label="Tambah">+</button></div></div>' +
+        '<div class="stack" style="gap:7px;margin-top:14px">' +
+        '<button class="btn btn-primary btn-block" type="button" id="mpWa"' + (habis ? ' disabled' : '') + '>💬 Pesan via WhatsApp</button>' +
+        '<button class="btn btn-light btn-block" type="button" data-x>Tutup</button></div>' +
+        (habis ? '<p class="tiny red center" style="margin:8px 0 0">Produk sedang habis, hubungi penjual untuk ketersediaan.</p>' : '');
+
+      body.querySelectorAll('[data-x]').forEach(function (b) {
+        b.addEventListener('click', function () { UK.closeModal('modalProduk'); });
+      });
+      body.querySelectorAll('input[name="pvar"]').forEach(function (r) {
+        r.addEventListener('change', function () {
+          varianIndex = Number(r.value);
+          render();
+        });
+      });
+      var qtyInput = body.querySelector('#mpQty');
+      function setQty(v) {
+        qty = Math.max(1, Math.min(Math.max(1, p.stok), v));
+        qtyInput.value = qty;
+      }
+      body.querySelector('#mpMinus').addEventListener('click', function () { setQty(qty - 1); });
+      body.querySelector('#mpPlus').addEventListener('click', function () { setQty(qty + 1); });
+      qtyInput.addEventListener('change', function () { setQty(parseInt(qtyInput.value, 10) || 1); });
+      body.querySelector('#mpWa').addEventListener('click', function () {
+        pesanProduk(p, qty, varianIndex);
+      });
+    }
+    render();
+    UK.openModal('modalProduk');
+  }
+
+  function pesanProduk(p, qty, varianIndex) {
+    var varian = varianIndex >= 0 && p.varian[varianIndex] ? p.varian[varianIndex] : null;
+    var nama = p.nama + (varian ? ' (' + varian.nama + ')' : '');
+    var harga = p.hargaJual + (varian ? Number(varian.tambahan) || 0 : 0);
+    var tpl = settings.templateWA ||
+      'Halo, saya tertarik memesan produk berikut:\n\nNama Produk: {produk}\nHarga: {harga}\nJumlah: {jumlah}\nTautan: {tautan}\n\nApakah produk ini masih tersedia?';
+    var teks = tpl
+      .replace(/\{produk\}/g, nama)
+      .replace(/\{harga\}/g, UK.rupiah(harga))
+      .replace(/\{jumlah\}/g, String(qty))
+      .replace(/\{tautan\}/g, location.href);
+    var link = UK.buatLinkWA(tenant.wa, teks);
+    if (!link) { UK.toast('Penjual belum mengatur nomor WhatsApp.', 'err'); return; }
+    try {
+      db.waClicks.create({ tenantId: tenant.id, productId: p.id, waktu: new Date().toISOString() });
+    } catch (e) { /* pencatatan tidak boleh menghalangi pembeli */ }
+    window.open(link, '_blank', 'noopener');
+  }
+
+  /* ---------- interaksi katalog ---------- */
+  var search = document.getElementById('catalogSearch');
+  search.addEventListener('input', UK.debounce(function () {
+    C.q = search.value.trim();
+    renderGrid();
+  }, 200));
+  document.getElementById('catalogSort').addEventListener('change', function () {
+    C.sort = this.value;
+    renderGrid();
+  });
+
+  document.querySelectorAll('[data-x]').forEach(function (b) {
+    b.addEventListener('click', function () { UK.closeModal('modalProduk'); });
+  });
+  document.getElementById('modalProduk').addEventListener('click', function (e) {
+    if (e.target === this) UK.closeModal('modalProduk');
+  });
+
+  /* ---------- tanya penjual ---------- */
+  document.getElementById('tanyaForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var nama = document.getElementById('tNama').value.trim();
+    var pesan = document.getElementById('tPesan').value.trim();
+    var bad = false;
+    document.getElementById('tNamaF').classList.toggle('invalid', nama.length < 2);
+    if (nama.length < 2) bad = true;
+    document.getElementById('tPesanF').classList.toggle('invalid', pesan.length < 5);
+    if (pesan.length < 5) bad = true;
+    if (bad) return;
+
+    var convs = db.conversations.list({ tenantId: tenant.id });
+    var found = convs.filter(function (c) {
+      return c.kanal === 'Website' && String(c.nama).toLowerCase() === nama.toLowerCase();
+    })[0];
+    var msg = { dari: 'pelanggan', teks: pesan, waktu: new Date().toISOString() };
+    if (found) {
+      db.conversations.update(found.id, {
+        messages: (found.messages || []).concat([msg]),
+        unread: (found.unread || 0) + 1
+      }, tenant.id);
+    } else {
+      db.conversations.create({
+        tenantId: tenant.id, nama: nama, kanal: 'Website', unread: 1,
+        telepon: '', catatan: '', messages: [msg]
+      });
+    }
+    document.getElementById('tanyaForm').innerHTML =
+      '<div class="banner info" style="margin:0"><span>✅</span><div>Pesan terkirim ke <b>' + UK.escapeHTML(tenant.nama) +
+      '</b>. Penjual akan membalas melalui dashboard UsahaKita.</div></div>';
+    UK.toast('Pesan terkirim.', 'ok');
+  });
+
+  /* ---------- mulai ---------- */
+  skeleton();
+  renderChips();
+  setTimeout(renderGrid, 180);
+})();
+</script>
+</body>
+</html>

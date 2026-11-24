@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Platform — UsahaKita</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+  .shake { animation: shake .4s ease; }
+  .admin-login-note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="auth-body" id="loginView">
+  <section class="auth-side">
+    <div>
+      <a class="brand" href="../index.html" style="margin-bottom:34px">
+        <span class="brand-mark">U</span><span class="brand-text" style="color:#fff">usaha<b style="color:#ffa163">kita</b></span>
+      </a>
+      <span class="status orange" style="background:rgba(244,119,43,.18);color:#ffb07c">ADMIN PLATFORM</span>
+      <h2 style="margin-top:12px">Kelola seluruh ekosistem UMKM dari satu tempat.</h2>
+      <p>Pantau pertumbuhan tenant, atur paket langganan, tangani tiket dukungan, dan jaga kesehatan layanan.</p>
+      <ul>
+        <li>Ringkasan metrik seluruh platform</li>
+        <li>Verifikasi &amp; penangguhan akun UMKM</li>
+        <li>Pengaturan paket yang tersinkron dengan landing</li>
+        <li>Pemantauan sistem dan log aktivitas</li>
+      </ul>
+    </div>
+    <p class="tiny" style="color:#8f96b3;margin:0">© <span id="adminTahun"></span> UsahaKita — prototype demo</p>
+  </section>
+  <section class="auth-main">
+    <div class="auth-card">
+      <a class="brand" href="../index.html" style="margin-bottom:20px">
+        <span class="brand-mark">U</span><span class="brand-text">usaha<b>kita</b></span>
+      </a>
+      <h1>Masuk admin platform</h1>
+      <p class="sub">Khusus tim internal UsahaKita.</p>
+      <div class="form-alert" id="adminAlert" role="alert"></div>
+      <form id="adminLogin" novalidate>
+        <div class="field">
+          <label for="adminUser">Username</label>
+          <input type="text" id="adminUser" autocomplete="username" placeholder="admin" required>
+        </div>
+        <div class="field">
+          <label for="adminPass">Kata sandi</label>
+          <div class="pw-wrap">
+            <input type="password" id="adminPass" autocomplete="current-password" placeholder="Kata sandi" required>
+            <button class="pw-toggle" type="button" id="adminPwToggle" aria-label="Tampilkan kata sandi">Lihat</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block btn-lg" type="submit" id="adminSubmit">Masuk</button>
+      </form>
+      <p class="admin-login-note">Mode demo — <b>admin</b> / <b>admin</b></p>
+      <p class="tiny muted center" style="margin-top:8px"><a href="../masuk.html">Masuk sebagai pemilik UMKM</a></p>
+    </div>
+  </section>
+</div>
+
+<!-- ============ SHELL ADMIN ============ -->
+<div class="app-shell hidden" id="adminShell">
+  <aside class="sidebar" id="adminSidebar">
+    <div class="sidebar-top">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark">U</span><span class="brand-text">usaha<b>kita</b></span>
+      </a>
+      <div class="tiny" style="color:#8f96b3;margin-top:6px;letter-spacing:.6px">ADMIN PLATFORM</div>
+    </div>
+    <nav class="nav" aria-label="Menu admin">
+      <div class="nav-label">Operasional</div>
+      <a class="nav-item" href="#/ringkasan" data-anav="ringkasan"><span class="ni">📊</span> Ringkasan</a>
+      <a class="nav-item" href="#/akun" data-anav="akun"><span class="ni">🏬</span> Akun UMKM</a>
+      <a class="nav-item" href="#/paket" data-anav="paket"><span class="ni">💳</span> Paket Langganan</a>
+      <a class="nav-item" href="#/kategori" data-anav="kategori"><span class="ni">🏷️</span> Kategori Bisnis</a>
+      <div class="nav-label">Platform</div>
+      <a class="nav-item" href="#/sistem" data-anav="sistem"><span class="ni">🩺</span> Pemantauan Sistem</a>
+      <a class="nav-item" href="#/laporan" data-anav="laporan"><span class="ni">📈</span> Laporan Platform</a>
+      <a class="nav-item" href="#/dukungan" data-anav="dukungan"><span class="ni">🎧</span> Dukungan Pengguna <span class="badge hidden" id="badgeTiket">0</span></a>
+      <a class="nav-item" href="#/setelan" data-anav="setelan"><span class="ni">⚙️</span> Pengaturan Admin</a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="logout-btn" type="button" id="adminLogout"><span>⏏</span> Keluar</button>
+    </div>
+  </aside>
+  <div class="nav-backdrop" id="adminBackdrop"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" type="button" id="adminMenuBtn" aria-label="Buka menu" aria-expanded="false">☰</button>
+      <div class="crumb"><span>Admin</span><span>/</span><b id="adminCrumb">Ringkasan</b></div>
+      <div class="grow">
+        <div class="search-box global-search">
+          <span class="ico">🔍</span>
+          <input type="search" id="adminSearch" placeholder="Cari UMKM… (Enter)" aria-label="Cari UMKM">
+        </div>
+      </div>
+      <div class="actions">
+        <div style="position:relative">
+          <button class="icon-btn" type="button" id="adminNotifBtn" aria-label="Notifikasi" aria-haspopup="true" aria-expanded="false">🔔
+            <span class="dot-badge hidden" id="adminNotifDot">0</span>
+          </button>
+          <div id="adminNotifPanel" class="hidden" style="position:absolute;right:0;top:38px;width:300px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px;z-index:200"></div>
+        </div>
+        <div class="user-chip">
+          <div class="avatar" id="adminAvatar">A</div>
+          <div>
+            <div class="nm" id="adminName">Admin</div>
+            <div class="rl">Admin platform</div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="page" id="adminRoot" tabindex="-1"></main>
+  </div>
+</div>
+
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/pemantauan.js"></script>
+</body>
+</html>

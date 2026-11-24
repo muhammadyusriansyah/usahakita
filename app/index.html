@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — UsahaKita</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../assets/css/base.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar" aria-label="Navigasi dashboard">
+    <div class="sidebar-top">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark">U</span>
+        <span class="brand-text">usaha<b>kita</b></span>
+      </a>
+    </div>
+
+    <div class="workspace">
+      <div class="av" id="wsInitial">B</div>
+      <div style="min-width:0">
+        <div class="nm" id="wsName">Usaha</div>
+        <div class="pl" id="wsPlan">Paket Free</div>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Menu utama">
+      <div class="nav-label">Operasional</div>
+      <a class="nav-item" href="#/dashboard" data-nav="dashboard"><span class="ni">▦</span> Dashboard</a>
+      <a class="nav-item" href="#/pos" data-nav="pos"><span class="ni">🧾</span> Kasir / POS</a>
+      <a class="nav-item" href="#/produk" data-nav="produk"><span class="ni">📦</span> Produk</a>
+      <a class="nav-item" href="#/stok" data-nav="stok"><span class="ni">📊</span> Persediaan Stok</a>
+      <a class="nav-item" href="#/transaksi" data-nav="transaksi"><span class="ni">💳</span> Transaksi</a>
+      <a class="nav-item" href="#/laporan" data-nav="laporan"><span class="ni">📈</span> Laporan</a>
+      <div class="nav-label">Pelanggan</div>
+      <a class="nav-item" href="#/pesan" data-nav="pesan"><span class="ni">💬</span> Pesan Pelanggan <span class="badge hidden" id="badgePesan">0</span></a>
+      <a class="nav-item" href="#/pelanggan" data-nav="pelanggan"><span class="ni">👥</span> Pelanggan</a>
+      <div class="nav-label">Pengaturan</div>
+      <a class="nav-item" href="#/pengaturan" data-nav="pengaturan"><span class="ni">⚙️</span> Pengaturan Usaha</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="upsell">
+        <b id="upsellTitle">Paket Free</b>
+        <span id="upsellDesc">20 produk · 1 pengguna</span>
+        <button class="btn btn-primary btn-xs btn-block" type="button" id="upgradeBtn" style="margin-top:8px">Kembangkan usahamu</button>
+      </div>
+      <button class="logout-btn" type="button" id="logoutBtn"><span>⏏</span> Keluar</button>
+    </div>
+  </aside>
+  <div class="nav-backdrop" id="navBackdrop"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" type="button" id="menuBtn" aria-label="Buka menu navigasi" aria-expanded="false">☰</button>
+      <div class="crumb"><span>UsahaKita</span><span>/</span><b id="crumbNow">Dashboard</b></div>
+      <div class="grow">
+        <div class="search-box global-search">
+          <span class="ico">🔍</span>
+          <input type="search" id="globalSearch" placeholder="Cari produk… (Enter)" aria-label="Pencarian produk">
+        </div>
+      </div>
+      <div class="actions">
+        <div style="position:relative">
+          <button class="icon-btn" type="button" id="notifBtn" aria-label="Notifikasi" aria-haspopup="true" aria-expanded="false">🔔
+            <span class="dot-badge hidden" id="notifDot">0</span>
+          </button>
+          <div id="notifPanel" class="hidden" style="position:absolute;right:0;top:38px;width:300px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px;z-index:200"></div>
+        </div>
+        <div class="user-chip">
+          <div class="avatar" id="avatarInitial">?</div>
+          <div>
+            <div class="nm" id="userName">-</div>
+            <div class="rl" id="userRole">-</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="appBanner" style="padding:0 22px"></div>
+    <main class="page" id="pageRoot" tabindex="-1"></main>
+  </div>
+</div>
+
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/produk.js"></script>
+<script src="js/pos.js"></script>
+<script src="js/stok.js"></script>
+<script src="js/transaksi.js"></script>
+<script src="js/laporan.js"></script>
+<script src="js/pelanggan.js"></script>
+<script src="js/pesan.js"></script>
+<script src="js/pengaturan.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var sess = Auth.requireAuth('pemilik');
+  if (!sess) return;
+
+  var tenant = db.tenants.get(sess.tenantId);
+  if (!tenant) { Auth.logout(); location.replace('../masuk.html'); return; }
+
+  var settings = db.settings.get(tenant.id);
+  var isKasir = sess.role === 'kasir';
+  var root = document.getElementById('pageRoot');
+
+  var ROUTES = {
+    dashboard: 'Dashboard',
+    pos: 'Kasir / POS',
+    produk: 'Produk',
+    stok: 'Persediaan Stok',
+    transaksi: 'Transaksi',
+    laporan: 'Laporan',
+    pesan: 'Pesan Pelanggan',
+    pelanggan: 'Pelanggan',
+    pengaturan: 'Pengaturan Usaha'
+  };
+  var KASIR_ALLOWED = ['pos', 'transaksi', 'produk'];
+
+  /* ---------- identitas ---------- */
+  document.getElementById('wsName').textContent = tenant.nama;
+  document.getElementById('wsInitial').textContent = UK.inisial(tenant.nama);
+  var plan = db.plans.get(tenant.paket) || db.plans.get('free');
+  document.getElementById('wsPlan').textContent = 'Paket ' + plan.nama;
+  document.getElementById('upsellTitle').textContent = 'Paket ' + plan.nama;
+  document.getElementById('upsellDesc').textContent = plan.batas.produk + ' produk · ' + plan.batas.pengguna + ' pengguna';
+  document.getElementById('userName').textContent = sess.nama;
+  document.getElementById('userRole').textContent = isKasir ? 'Kasir' : 'Pemilik';
+  document.getElementById('avatarInitial').textContent = UK.inisial(sess.nama);
+
+  /* ---------- banner verifikasi / status ---------- */
+  var bannerHost = document.getElementById('appBanner');
+  var dismissKey = 'uk_banner_' + tenant.id;
+  var dismissed = false;
+  try { dismissed = sessionStorage.getItem(dismissKey) === '1'; } catch (e) {}
+
+  function renderBanner() {
+    bannerHost.innerHTML = '';
+    if (dismissed) return;
+    var msg = '';
+    var type = 'info';
+    if (tenant.status === 'Ditangguhkan') {
+      msg = 'Akun usaha sedang <b>ditangguhkan</b>. Hubungi dukungan UsahaKita sebelum melanjutkan transaksi.';
+      type = 'warn';
+    } else if (tenant.status === 'Menunggu verifikasi') {
+      msg = 'Email <b>' + UK.escapeHTML(tenant.email) + '</b> belum terverifikasi. Klik tautan verifikasi di email (simulasi) untuk mengaktifkan seluruh fitur.';
+    } else {
+      return;
+    }
+    var b = document.createElement('div');
+    b.className = 'banner ' + type;
+    b.style.marginTop = '14px';
+    b.innerHTML = '<span>✉️</span><div class="grow">' + msg + '</div><button class="x" type="button" aria-label="Tutup pemberitahuan">✕</button>';
+    b.querySelector('.x').addEventListener('click', function () {
+      dismissed = true;
+      try { sessionStorage.setItem(dismissKey, '1'); } catch (e) {}
+      renderBanner();
+    });
+    bannerHost.appendChild(b);
+  }
+  renderBanner();
+
+  /* ---------- badge sidebar & notifikasi ---------- */
+  function hitungBadge() {
+    var convs = db.conversations.list({ tenantId: tenant.id });
+    var unread = convs.reduce(function (a, c) { return a + (Number(c.unread) || 0); }, 0);
+    var produk = db.products.list({ tenantId: tenant.id }).filter(function (p) {
+      return p.status !== 'diarsipkan' && p.stok <= p.stokMin;
+    });
+    var elPesan = document.getElementById('badgePesan');
+    if (elPesan) {
+      elPesan.textContent = unread > 99 ? '99+' : unread;
+      elPesan.classList.toggle('hidden', unread === 0);
+    }
+    var total = unread + produk.length;
+    var dot = document.getElementById('notifDot');
+    if (dot) {
+      dot.textContent = total > 9 ? '9+' : total;
+      dot.classList.toggle('hidden', total === 0);
+    }
+
+    var panel = document.getElementById('notifPanel');
+    if (!panel) return;
+    var items = [];
+    if (produk.length) {
+      items.push('<div class="tiny muted" style="font-weight:700;padding:2px 4px 5px">Stok menipis / habis</div>');
+      produk.slice(0, 4).forEach(function (p) {
+        items.push('<a href="#/stok" class="notif-link" style="display:block;padding:6px 4px;border-radius:7px;color:var(--ink);font-size:11.5px">📦 ' +
+          UK.escapeHTML(p.nama) + ' — <b>' + p.stok + '</b> tersisa</a>');
+      });
+      items.push('<div style="height:1px;background:var(--line);margin:5px 0"></div>');
+    }
+    if (unread) {
+      items.push('<div class="tiny muted" style="font-weight:700;padding:2px 4px 5px">Pesan belum dibaca</div>');
+      convs.filter(function (c) { return c.unread > 0; }).slice(0, 4).forEach(function (c) {
+        items.push('<a href="#/pesan" class="notif-link" style="display:block;padding:6px 4px;border-radius:7px;color:var(--ink);font-size:11.5px">💬 ' +
+          UK.escapeHTML(c.nama) + ' — ' + c.unread + ' pesan baru</a>');
+      });
+    }
+    if (!items.length) items.push('<div class="tiny muted" style="padding:12px 4px;text-align:center">Tidak ada notifikasi baru. 🎉</div>');
+    panel.innerHTML = items.join('');
+    panel.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { panel.classList.add('hidden'); });
+    });
+  }
+  hitungBadge();
+
+  document.getElementById('notifBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var panel = document.getElementById('notifPanel');
+    var nowHidden = panel.classList.toggle('hidden');
+    this.setAttribute('aria-expanded', nowHidden ? 'false' : 'true');
+  });
+  document.addEventListener('click', function (e) {
+    var panel = document.getElementById('notifPanel');
+    if (!panel.classList.contains('hidden') && !panel.contains(e.target)) panel.classList.add('hidden');
+  });
+
+  /* ---------- router ---------- */
+  function parseHash() {
+    var raw = String(location.hash || '').replace(/^#\/?/, '');
+    var qi = raw.indexOf('?');
+    var name = (qi >= 0 ? raw.slice(0, qi) : raw) || 'dashboard';
+    var query = {};
+    if (qi >= 0) {
+      raw.slice(qi + 1).split('&').forEach(function (kv) {
+        if (!kv) return;
+        var p = kv.split('=');
+        query[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || '');
+      });
+    }
+    return { name: name, query: query };
+  }
+
+  function navigate(hash) {
+    if (location.hash === hash) render();
+    else location.hash = hash;
+  }
+
+  var ctx = {
+    session: sess, tenant: tenant, settings: settings, isKasir: isKasir,
+    navigate: navigate, refreshShell: function () {
+      tenant = db.tenants.get(sess.tenantId) || tenant;
+      settings = db.settings.get(tenant.id);
+      ctx.tenant = tenant; ctx.settings = settings;
+      hitungBadge();
+      renderBanner();
+    },
+    setTitle: function (t) { document.title = t + ' — UsahaKita'; }
+  };
+
+  function render() {
+    var r = parseHash();
+    if (isKasir && KASIR_ALLOWED.indexOf(r.name) < 0) {
+      location.hash = '#/pos';
+      return;
+    }
+    if (!ROUTES[r.name]) {
+      location.hash = '#/dashboard';
+      return;
+    }
+    document.getElementById('crumbNow').textContent = ROUTES[r.name];
+    document.querySelectorAll('[data-nav]').forEach(function (el) {
+      el.classList.toggle('active', el.getAttribute('data-nav') === r.name);
+    });
+    document.body.classList.remove('nav-open');
+    document.getElementById('menuBtn').setAttribute('aria-expanded', 'false');
+    document.onkeydown = null;
+    root.innerHTML = '';
+    ctx.query = r.query;
+    ctx.refreshShell();
+    var mod = UK.modules[r.name];
+    document.title = ROUTES[r.name] + ' — UsahaKita';
+    if (!mod) {
+      root.innerHTML = '<div class="card empty-note"><span class="ico">🚧</span><b>' + ROUTES[r.name] + ' segera hadir</b>' +
+        '<span>Modul ini sedang disiapkan.</span></div>';
+      return;
+    }
+    try {
+      mod.render(root, ctx);
+    } catch (err) {
+      console.error(err);
+      root.innerHTML = '<div class="card empty-note"><span class="ico">⚠️</span><b>Terjadi kesalahan saat memuat modul</b><span>' +
+        UK.escapeHTML(err.message) + '</span></div>';
+    }
+    window.scrollTo({ top: 0 });
+  }
+
+  /* kasir: sembunyikan menu yang tidak boleh diakses */
+  if (isKasir) {
+    ['dashboard', 'stok', 'laporan', 'pesan', 'pelanggan', 'pengaturan'].forEach(function (k) {
+      var el = document.querySelector('[data-nav="' + k + '"]');
+      if (el) el.remove();
+    });
+    document.querySelectorAll('.nav-label').forEach(function (l, i) { if (i > 0) l.remove(); });
+    var up = document.querySelector('.upsell');
+    if (up) up.remove();
+    var upsellBtn = document.getElementById('upgradeBtn');
+    if (upsellBtn) upsellBtn.remove();
+  }
+
+  var upgradeBtn = document.getElementById('upgradeBtn');
+  if (upgradeBtn) {
+    upgradeBtn.addEventListener('click', function () {
+      navigate('#/pengaturan?tab=paket');
+    });
+  }
+
+  /* ---------- interaksi shell ---------- */
+  document.getElementById('logoutBtn').addEventListener('click', function () {
+    UK.confirmDialog('Keluar dari akun ini?', { okText: 'Keluar' }).then(function (yes) {
+      if (!yes) return;
+      Auth.logout();
+      location.href = '../masuk.html';
+    });
+  });
+
+  var menuBtn = document.getElementById('menuBtn');
+  menuBtn.addEventListener('click', function () {
+    var open = document.body.classList.toggle('nav-open');
+    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.getElementById('navBackdrop').addEventListener('click', function () {
+    document.body.classList.remove('nav-open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+  });
+
+  var search = document.getElementById('globalSearch');
+  search.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var q = search.value.trim();
+    navigate('#/produk' + (q ? '?q=' + encodeURIComponent(q) : ''));
+    search.blur();
+  });
+
+  window.addEventListener('hashchange', render);
+  if (!location.hash) location.hash = '#/dashboard';
+  render();
+
+  /* expose untuk modul */
+  window.UK.shell = { navigate: navigate, refresh: ctx.refreshShell, tenant: function () { return tenant; } };
+})();
+</script>
+</body>
+</html>
